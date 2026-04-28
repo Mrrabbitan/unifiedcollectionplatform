@@ -1,0 +1,47 @@
+获取任务实例：get请求，/projects/167723587262976/workflow-instances?pageNo=1&pageSize=10
+
+筛选框：任务名称、执行用户、主机、全部状态、开始时间->结束时间
+表头：任务名称、状态、运行类型、调度时间、开始时间、结束时间、运行时长、运行次数、执行用户、主机 查询工作流的
+
+每条任务都有几个按钮：重跑、停止、删除、强制成功、查看日志、下载日志
+
+任务实例页面，点击查看日志，请求接口：1、/log/detail?taskInstanceId=4411&limit=1000&skipLineNum=0；2、/log/detail?taskInstanceId=4411&limit=1000&skipLineNum=43
+
+强制成功：1、post请求，/projects/169128481683968/task-instances/4595/force-success，没有负载；2、重新查询任务实例
+
+其它按钮先提示在开发中
+
+日志下载调用过程：
+downloadLog(row.id)
+    ↓
+utils.downloadFile('log/download-log', { taskInstanceId: id })
+    ↓
+创建隐藏 <form> → 提交表单 → 浏览器下载文件
+
+日志下载核心方法：
+const downloadFile = (url: string, obj?: any) => {
+  const param: any = {
+    url: resolveURL(url),
+    obj: obj || {}
+  }
+
+  const form = document.createElement('form')
+  form.action = param.url
+  form.method = 'get'
+  form.style.display = 'none'
+  Object.keys(param.obj).forEach((key) => {
+    const input = document.createElement('input')
+    input.type = 'hidden'
+    input.name = key
+    input.value = param.obj[key]
+    form.appendChild(input)
+  })
+  const button = document.createElement('input')
+  button.type = 'submit'
+  form.appendChild(button)
+  document.body.appendChild(form)
+  form.submit()
+  document.body.removeChild(form)
+}
+
+

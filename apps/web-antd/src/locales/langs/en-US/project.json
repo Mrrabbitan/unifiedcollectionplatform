@@ -1,0 +1,36 @@
+{
+  "title": "Project Management",
+  "new": {
+    "title": "New Project"
+  },
+  "list": {
+    "title": "Project List"
+  },
+  "overview": {
+    "title": "Project Overview",
+    "userDistribution": "User Distribution",
+    "taskStatus": "Task Status Distribution",
+    "workflowStatus": "Workflow Status Statistics",
+    "definedUsers": "Defined Users",
+    "otherUsers": "Other Users",
+    "waiting": "Waiting",
+    "running": "Running",
+    "success": "Success",
+    "failure": "Failure",
+    "pause": "Pause",
+    "stop": "Stop",
+    "selectProject": "Select Project"
+  },
+  "workergroup": {
+    "title": "Worker Group Management"
+  },
+  "yarnqueue": {
+    "title": "Yarn Queue Management"
+  },
+  "environment": {
+    "title": "Environment Management"
+  },
+  "resourceconfig": {
+    "title": "Resource Configuration"
+  }
+}
