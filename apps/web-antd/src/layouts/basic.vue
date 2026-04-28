@@ -22,6 +22,7 @@ import { Select, Spin } from 'ant-design-vue';
 
 import { $t } from '#/locales';
 import AiAssistant from '#/layouts/widgets/ai-assistant/index.vue';
+import ApiEnvSwitcher from '#/layouts/widgets/api-env-switcher/index.vue';
 import { useAuthStore, useProjectStore } from '#/store';
 import LoginForm from '#/views/_core/authentication/login.vue';
 
@@ -200,6 +201,9 @@ watch(
           />
         </div>
       </Spin>
+    </template>
+    <template #header-right-50>
+      <ApiEnvSwitcher />
     </template>
     <template #user-dropdown>
       <UserDropdown

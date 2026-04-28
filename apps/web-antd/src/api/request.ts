@@ -67,6 +67,27 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
       // config.headers.Authorization = formatToken(accessStore.accessToken);
       config.headers['Accept-Language'] = preferences.app.locale;
       config.headers['Language'] = preferences.app.locale;
+      // 顶部「环境切换器」决定的当前上游：mock / prod
+      // 这里直读 localStorage 而不是 useApiEnvStore()，因为 request.ts
+      // 在 Pinia 初始化前就被某些 setup-script 引用，避免循环依赖。
+      let apiEnv: 'mock' | 'prod' = 'mock';
+      try {
+        if (
+          typeof localStorage !== 'undefined' &&
+          localStorage.getItem('app:apiEnv') === 'prod'
+        ) {
+          apiEnv = 'prod';
+        }
+      } catch {
+        apiEnv = 'mock';
+      }
+      config.headers['X-Api-Env'] = apiEnv;
+      // 选择 prod 时，把 baseURL 从 /api 改写为 /__prod_api/api。
+      // 该前缀对应 vite.config.ts 里 /__prod_api proxy → 10.177.64.38:8080，
+      // rewrite 会再把前缀剥掉，所以上游收到的仍是 /api/...
+      if (apiEnv === 'prod' && config.baseURL === '/api') {
+        config.baseURL = '/__prod_api/api';
+      }
       return config;
     },
   });

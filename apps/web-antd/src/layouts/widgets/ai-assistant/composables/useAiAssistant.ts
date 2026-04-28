@@ -28,6 +28,38 @@ function uid() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+/**
+ * 把 plan 里"我们能拿来填表单"的字段拍平成展示用的中文字符串列表，
+ * 用于跳转前在聊天里给出"我已经帮你填了 N 项"的回执。
+ */
+function collectFilledFields(plan: AiTaskPlan): string[] {
+  const items: string[] = [];
+  if (plan.name) items.push(`任务名 ${plan.name}`);
+  if (plan.source?.type) {
+    const ds = plan.source.datasourceName || plan.source.datasourceHost;
+    items.push(`源端 ${plan.source.type}${ds ? ` / ${ds}` : ''}`);
+  }
+  if (plan.source?.tables?.length) {
+    items.push(`源表 ${plan.source.tables.join(', ')}`);
+  } else if (plan.source?.table) {
+    items.push(`源表 ${plan.source.table}`);
+  }
+  if (plan.target?.type) {
+    const ds = plan.target.datasourceName || plan.target.datasourceHost;
+    items.push(`目标端 ${plan.target.type}${ds ? ` / ${ds}` : ''}`);
+  }
+  if (plan.target?.tableNameMode === 'auto') items.push('目标表 自动建表');
+  else if (plan.target?.tableNameMode === 'select') items.push('目标表 已有表');
+  if (plan.target?.dataSaveMode === 'APPEND_DATA') items.push('保存模式 追加数据');
+  else if (plan.target?.dataSaveMode === 'DROP_DATA') items.push('保存模式 覆盖数据');
+  if (plan.runConfig?.runMode) items.push(`运行模式 ${plan.runConfig.runMode}`);
+  if (plan.runConfig?.flinkJobConfigName) {
+    items.push(`资源配置 ${plan.runConfig.flinkJobConfigName}`);
+  }
+  if (plan.schedule?.mode) items.push(`调度 ${plan.schedule.mode}`);
+  return items;
+}
+
 export function useAiAssistant() {
   const router = useRouter();
   const draftStore = useAiTaskDraftStore();
@@ -130,6 +162,25 @@ export function useAiAssistant() {
       });
       return;
     }
+
+    const fields = collectFilledFields(plan);
+    const summaryLines = ['已为你打开任务表单，并预填以下字段：'];
+    if (fields.length > 0) {
+      summaryLines.push(...fields.map((f) => `· ${f}`));
+    } else {
+      summaryLines.push('· 暂未识别到具体字段，请在表单内补充');
+    }
+    if (plan.missing && plan.missing.length > 0) {
+      summaryLines.push(
+        '',
+        `仍需补充：${plan.missing.join('、')}`,
+      );
+    }
+    pushAssistant({
+      content: summaryLines.join('\n'),
+      status: 'success',
+    });
+
     draftStore.setDraft(plan);
     closePanel();
     const target =

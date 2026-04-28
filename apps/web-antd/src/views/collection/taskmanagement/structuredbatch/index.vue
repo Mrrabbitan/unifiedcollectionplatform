@@ -28,6 +28,7 @@ import {
 } from 'ant-design-vue';
 
 import { getDataSourceListApi, getDataSourceDetailApi, getMetasApi, type DataSourceInfo, type DataSourceMeta } from '#/api/datasource/datasource';
+import { getFlinkJobConfigAll, type FlinkJobConfigItem } from '#/api/flink-job-config';
 import { getWorkerGroupsAll, getEnvironmentList, getProjectPreference, getQueueList, type EnvironmentItem, type ProjectPreference, type QueueItem } from '#/api/project';
 import { verifyWorkflowName, createStructuredBatchTask, updateWorkflowTask, getWorkflowTaskTypeData } from '#/api/taskmanagement';
 import { useProjectStore } from '#/store';
@@ -513,50 +514,250 @@ async function loadEditData() {
   }
 }
 
-function applyAiDraftIfPresent() {
+/**
+ * 在数据源列表里按 (type, host?, name?) 找最匹配的一条。
+ * - host 优先精确命中；name 走精确 + 包含两轮匹配。
+ */
+function findDatasourceByHostOrName(
+  list: DataSourceInfo[],
+  type: string,
+  host?: string,
+  dsName?: string,
+): DataSourceInfo | undefined {
+  const sameType = list.filter((d) => d.type === type);
+  if (host) {
+    const exactHost = sameType.find((d) => d.host === host);
+    if (exactHost) return exactHost;
+  }
+  if (dsName) {
+    const lower = dsName.toLowerCase();
+    const exact = sameType.find((d) => d.name?.toLowerCase() === lower);
+    if (exact) return exact;
+    const fuzzy = sameType.find((d) =>
+      (d.name || '').toLowerCase().includes(lower),
+    );
+    if (fuzzy) return fuzzy;
+  }
+  return undefined;
+}
+
+/**
+ * 监听 mysqlSourceConfig.tables 长度，当 child 把 datasourceId 的 watch 触发完
+ * loadTables 后(allTables 出现)即视为表清单加载完成。这里给一个超时保险，避免死等。
+ */
+async function waitForSourceTablesLoaded(timeoutMs = 3000): Promise<void> {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    if ((mysqlSourceConfigRef.value?.allTables?.length ?? 0) > 0) return;
+    await new Promise((resolve) => setTimeout(resolve, 80));
+  }
+}
+
+/**
+ * 把 AI 助手解析出的 plan 套到表单的 ref 上：
+ * 1) 任务名 / 描述
+ * 2) 源端类型 / 目标端类型
+ * 3) 数据源解析（host 精确、name 模糊）→ 写入 datasourceId，
+ *    并 await loadTables 后写入 source.tables
+ * 4) 目标端 tableNameMode / dataSaveMode
+ * 5) runConfig 的 runMode
+ * 6) Flink 资源配置：按 resourceName 命中后复刻 handleFlinkConfigChange 的字段映射
+ */
+async function applyAiDraftIfPresent() {
   if (route.query.fromAi !== '1') return;
   const draftStore = useAiTaskDraftStore();
   const draft = draftStore.consumeDraft('structuredBatch');
   if (!draft) return;
 
-  if (draft.name) name.value = draft.name;
+  const filled: string[] = [];
+  const skipped: string[] = [];
+
+  if (draft.name) {
+    name.value = draft.name;
+    filled.push(`任务名「${draft.name}」`);
+  }
   if (draft.description) taskDescription.value = draft.description;
 
   if (draft.source?.type) {
     sourceType.value = draft.source.type;
+    filled.push(`源端 ${draft.source.type}`);
   }
-  if (draft.source?.tables?.length || draft.source?.table) {
-    const tables = draft.source.tables ?? [draft.source.table!];
-    if (sourceType.value === 'MYSQL') {
-      mysqlSourceConfig.value = {
-        ...mysqlSourceConfig.value,
-        database: draft.source.database || mysqlSourceConfig.value.database,
-        tables,
-      };
-    }
-  }
-
   if (draft.target?.type) {
     targetSystemType.value = draft.target.type;
+    filled.push(`目标端 ${draft.target.type}`);
   }
-  if (draft.target?.tables?.length || draft.target?.table) {
-    const tables = draft.target.tables ?? [draft.target.table!];
-    if (targetSystemType.value === 'MYSQL') {
-      mysqlTargetConfig.value = {
-        ...mysqlTargetConfig.value,
-        database: draft.target.database || mysqlTargetConfig.value.database,
-        tables,
+
+  // 等待 sourceType / targetSystemType 切换后子组件渲染完毕
+  await nextTick();
+
+  // 拉一次完整的数据源列表（不依赖页面顶层 loadSourceDatasources 的时序）
+  let allDatasources: DataSourceInfo[] = [];
+  try {
+    const res = await getDataSourceListApi(1, 1000, '');
+    allDatasources = res.totalList || [];
+  } catch (error) {
+    console.warn('[AI Assist] 获取数据源列表失败', error);
+  }
+
+  // ============ 源端 ============
+  if (draft.source?.type === 'MYSQL') {
+    const ds = findDatasourceByHostOrName(
+      allDatasources,
+      'MYSQL',
+      draft.source.datasourceHost,
+      draft.source.datasourceName,
+    );
+    if (ds) {
+      mysqlSourceConfig.value = {
+        ...mysqlSourceConfig.value,
+        datasourceId: ds.id,
+        database: ds.database || mysqlSourceConfig.value.database,
       };
-    } else {
-      mcConfig.value = {
-        ...mcConfig.value,
-        project: draft.target.database || mcConfig.value.project,
-        table_name: tables[0] || mcConfig.value.table_name,
-      };
+      filled.push(`源数据源「${ds.name}」`);
+      // 等子组件 watch 触发 + loadTables 完成
+      await nextTick();
+      await waitForSourceTablesLoaded();
+      const tables =
+        draft.source.tables ?? (draft.source.table ? [draft.source.table] : []);
+      if (tables.length > 0) {
+        mysqlSourceConfig.value = {
+          ...mysqlSourceConfig.value,
+          tables,
+          tableQueries: tables.reduce<Record<string, string>>((acc, t) => {
+            acc[t] = mysqlSourceConfig.value.tableQueries[t] || '';
+            return acc;
+          }, {}),
+        };
+        filled.push(`源表 ${tables.join(', ')}`);
+      }
+    } else if (draft.source.datasourceHost || draft.source.datasourceName) {
+      skipped.push(
+        `源数据源（${draft.source.datasourceHost ?? draft.source.datasourceName}）`,
+      );
     }
   }
 
-  message.info('已根据 AI 助手的需求预填关键信息，请补充剩余配置后保存');
+  // ============ 目标端 ============
+  if (draft.target?.type === 'MYSQL') {
+    const ds = findDatasourceByHostOrName(
+      allDatasources,
+      'MYSQL',
+      draft.target.datasourceHost,
+      draft.target.datasourceName,
+    );
+    if (ds) {
+      mysqlTargetConfig.value = {
+        ...mysqlTargetConfig.value,
+        datasourceId: ds.id,
+        database: ds.database || mysqlTargetConfig.value.database,
+      };
+      filled.push(`目标数据源「${ds.name}」`);
+    } else if (draft.target.datasourceHost || draft.target.datasourceName) {
+      skipped.push(
+        `目标数据源（${draft.target.datasourceHost ?? draft.target.datasourceName}）`,
+      );
+    }
+    if (draft.target.tableNameMode) {
+      mysqlTargetConfig.value = {
+        ...mysqlTargetConfig.value,
+        tableNameMode: draft.target.tableNameMode,
+      };
+      filled.push(
+        draft.target.tableNameMode === 'auto' ? '自动建表' : '从已有表中选',
+      );
+    }
+    if (draft.target.dataSaveMode) {
+      mysqlTargetConfig.value = {
+        ...mysqlTargetConfig.value,
+        dataSaveMode: draft.target.dataSaveMode,
+      };
+      filled.push(
+        draft.target.dataSaveMode === 'APPEND_DATA' ? '追加数据' : '覆盖数据',
+      );
+    }
+    if (
+      (draft.target.tables?.length || draft.target.table) &&
+      draft.target.tableNameMode !== 'auto'
+    ) {
+      const tables =
+        draft.target.tables ?? (draft.target.table ? [draft.target.table] : []);
+      mysqlTargetConfig.value = {
+        ...mysqlTargetConfig.value,
+        tables,
+      };
+      filled.push(`目标表 ${tables.join(', ')}`);
+    }
+  } else if (
+    draft.target?.type === 'MAXCOMPUTE' &&
+    (draft.target.tables?.length || draft.target.table)
+  ) {
+    const tables =
+      draft.target.tables ?? [draft.target.table!];
+    mcConfig.value = {
+      ...mcConfig.value,
+      project: draft.target.database || mcConfig.value.project,
+      table_name: tables[0] || mcConfig.value.table_name,
+    };
+  }
+
+  // ============ 运行配置 ============
+  if (draft.runConfig?.runMode) {
+    runConfig.value = {
+      ...runConfig.value,
+      runMode: draft.runConfig.runMode,
+    };
+    filled.push(`运行模式 ${draft.runConfig.runMode}`);
+  }
+  if (draft.runConfig?.flinkJobConfigName) {
+    try {
+      const flinkList = await getFlinkJobConfigAll();
+      const target =
+        (flinkList || []).find(
+          (item: FlinkJobConfigItem) =>
+            item.resourceName === draft.runConfig!.flinkJobConfigName,
+        ) ||
+        (flinkList || []).find((item: FlinkJobConfigItem) =>
+          (item.resourceName || '').includes(
+            draft.runConfig!.flinkJobConfigName!,
+          ),
+        );
+      if (target) {
+        runConfig.value = {
+          ...runConfig.value,
+          flinkJobConfigId: target.id,
+          flinkVersion: target.flinkVersion || runConfig.value.flinkVersion,
+          jmMemory: target.jmMemory || runConfig.value.jmMemory,
+          tmMemory: target.tmMemory || runConfig.value.tmMemory,
+          submitMode: target.submitMode || runConfig.value.submitMode,
+          parallelism: target.parallelism || runConfig.value.parallelism,
+          slot: target.slots || runConfig.value.slot,
+          checkpointInterval:
+            target.checkpointIntervalMs || runConfig.value.checkpointInterval,
+          checkpointTimeout:
+            target.checkpointTimeoutMs || runConfig.value.checkpointTimeout,
+          queueName: target.queueName || runConfig.value.queueName,
+          checkpointDir: target.checkpointDir || runConfig.value.checkpointDir,
+        };
+        filled.push(`资源配置「${target.resourceName}」`);
+      } else {
+        skipped.push(`资源配置（${draft.runConfig.flinkJobConfigName}）`);
+      }
+    } catch (error) {
+      console.warn('[AI Assist] 获取 Flink 资源配置列表失败', error);
+      skipped.push(`资源配置（${draft.runConfig.flinkJobConfigName}）`);
+    }
+  }
+
+  if (filled.length > 0) {
+    message.success(
+      `AI 助手已为你回填 ${filled.length} 项：${filled.join('、')}`,
+    );
+  } else {
+    message.info('已根据 AI 助手的需求预填关键信息，请补充剩余配置后保存');
+  }
+  if (skipped.length > 0) {
+    message.warning(`未在系统中匹配到：${skipped.join('、')}，请手动选择`);
+  }
 }
 
 onMounted(() => {

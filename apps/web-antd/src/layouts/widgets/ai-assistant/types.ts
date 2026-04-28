@@ -12,6 +12,8 @@ export interface AiTaskEndpoint {
   type?: string;
   /** 用户描述里识别到的数据源名称（用于在数据源列表中模糊匹配） */
   datasourceName?: string;
+  /** 用户描述里识别到的数据源 host / IP（用于在数据源列表中精确匹配 host） */
+  datasourceHost?: string;
   /** 数据源 ID（解析阶段如果命中已有数据源，会一并填上） */
   datasourceId?: number;
   /** 库 / 项目 */
@@ -19,6 +21,18 @@ export interface AiTaskEndpoint {
   /** 表名（结构化批量可能多张，CDC 单张） */
   table?: string;
   tables?: string[];
+  /** 仅目标端：表名生成方式 (auto=自动建表 / select=从已有表中选) */
+  tableNameMode?: 'auto' | 'select';
+  /** 仅目标端：数据保存模式 */
+  dataSaveMode?: 'APPEND_DATA' | 'DROP_DATA';
+}
+
+/** 任务的运行配置（运行模式 + Flink 资源配置等） */
+export interface AiTaskRunConfig {
+  /** 运行模式 LOCAL / FLINK */
+  runMode?: 'FLINK' | 'LOCAL';
+  /** Flink 资源配置的展示名（用于在 /flink-job-config/list 里按 resourceName 命中 id） */
+  flinkJobConfigName?: string;
 }
 
 export interface AiTaskSchedule {
@@ -41,6 +55,8 @@ export interface AiTaskPlan {
   /** 字段映射（可选，目前 mock 不主动给出） */
   fieldMapping?: Record<string, string>;
   schedule?: AiTaskSchedule;
+  /** 运行配置（运行模式 / Flink 资源配置等） */
+  runConfig?: AiTaskRunConfig;
   /** 缺失字段的英文 key 列表，给 UI 高亮提醒 */
   missing: string[];
   /** 0~1，当前规则解析的置信度 */
