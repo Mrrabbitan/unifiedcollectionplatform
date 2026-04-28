@@ -40,11 +40,48 @@ const targetLabel = computed(() => formatEndpoint(props.plan.target));
 
 function formatEndpoint(endpoint: AiTaskPlan['source']) {
   const parts = [endpoint.type || '未识别'];
-  if (endpoint.datasourceName) parts.push(endpoint.datasourceName);
+  const ds = endpoint.datasourceName || endpoint.datasourceHost;
+  if (ds) parts.push(ds);
   if (endpoint.database) parts.push(endpoint.database);
-  if (endpoint.table) parts.push(endpoint.table);
+  if (endpoint.tables && endpoint.tables.length > 0) {
+    parts.push(endpoint.tables.join(', '));
+  } else if (endpoint.table) {
+    parts.push(endpoint.table);
+  } else if (endpoint.tableNameMode === 'auto') {
+    parts.push('自动建表');
+  }
   return parts.join(' / ');
 }
+
+const targetExtraTags = computed(() => {
+  const tags: Array<{ color: string; label: string }> = [];
+  const tgt = props.plan.target;
+  if (tgt?.tableNameMode === 'auto') {
+    tags.push({ color: 'blue', label: '自动建表' });
+  } else if (tgt?.tableNameMode === 'select') {
+    tags.push({ color: 'default', label: '已有表' });
+  }
+  if (tgt?.dataSaveMode === 'APPEND_DATA') {
+    tags.push({ color: 'green', label: '追加数据' });
+  } else if (tgt?.dataSaveMode === 'DROP_DATA') {
+    tags.push({ color: 'red', label: '覆盖数据' });
+  }
+  return tags;
+});
+
+const runConfigTags = computed(() => {
+  const tags: Array<{ color: string; label: string }> = [];
+  const rc = props.plan.runConfig;
+  if (rc?.runMode) {
+    tags.push({ color: 'geekblue', label: `运行模式 ${rc.runMode}` });
+  }
+  if (rc?.flinkJobConfigName) {
+    tags.push({ color: 'purple', label: `资源 ${rc.flinkJobConfigName}` });
+  }
+  return tags;
+});
+
+const hasRunConfig = computed(() => runConfigTags.value.length > 0);
 
 const confidencePercent = computed(() =>
   Math.round((props.plan.confidence || 0) * 100),
@@ -82,7 +119,25 @@ const confidenceTone = computed(() => {
       </div>
       <div class="ai-plan-card__row">
         <span class="ai-plan-card__label">目标端</span>
-        <span class="ai-plan-card__value">{{ targetLabel }}</span>
+        <span class="ai-plan-card__value">
+          {{ targetLabel }}
+          <template v-for="tag in targetExtraTags" :key="tag.label">
+            <Tag :color="tag.color" class="!ml-2 !m-0">{{ tag.label }}</Tag>
+          </template>
+        </span>
+      </div>
+      <div v-if="hasRunConfig" class="ai-plan-card__row">
+        <span class="ai-plan-card__label">运行</span>
+        <span class="ai-plan-card__value">
+          <Tag
+            v-for="tag in runConfigTags"
+            :key="tag.label"
+            :color="tag.color"
+            class="!m-0 !mr-1"
+          >
+            {{ tag.label }}
+          </Tag>
+        </span>
       </div>
       <div v-if="plan.schedule" class="ai-plan-card__row">
         <span class="ai-plan-card__label">调度</span>
