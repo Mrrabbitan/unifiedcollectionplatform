@@ -3,8 +3,13 @@ import type { Conversation } from '#/store/aiqa-chat';
 
 import { computed, ref } from 'vue';
 
-import { IconifyIcon } from '@vben/icons';
-
+import {
+  DeleteOutlined,
+  EditOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
+  PlusOutlined,
+} from '@ant-design/icons-vue';
 import { Button, Input, Modal, Tooltip } from 'ant-design-vue';
 import { storeToRefs } from 'pinia';
 
@@ -89,12 +94,12 @@ const isEmpty = computed(() => sortedConversations.value.length === 0);
         class="conv-list__new"
         @click="onNewChat"
       >
-        <template #icon><IconifyIcon icon="ant-design:plus-outlined" /></template>
+        <template #icon><PlusOutlined /></template>
         新建对话
       </Button>
       <Tooltip v-else title="新建对话" placement="right">
         <Button class="conv-list__new-icon" @click="onNewChat">
-          <template #icon><IconifyIcon icon="ant-design:plus-outlined" /></template>
+          <template #icon><PlusOutlined /></template>
         </Button>
       </Tooltip>
       <Tooltip
@@ -106,13 +111,8 @@ const isEmpty = computed(() => sortedConversations.value.length === 0);
           type="button"
           @click="collapsed = !collapsed"
         >
-          <IconifyIcon
-            :icon="
-              collapsed
-                ? 'ant-design:menu-unfold-outlined'
-                : 'ant-design:menu-fold-outlined'
-            "
-          />
+          <MenuUnfoldOutlined v-if="collapsed" />
+          <MenuFoldOutlined v-else />
         </button>
       </Tooltip>
     </div>
@@ -158,7 +158,7 @@ const isEmpty = computed(() => sortedConversations.value.length === 0);
                 class="conv-item__btn"
                 @click="(e) => startRename(conv, e)"
               >
-                <IconifyIcon icon="ant-design:edit-outlined" />
+                <EditOutlined />
               </button>
             </Tooltip>
             <Tooltip title="删除" placement="top">
@@ -167,7 +167,7 @@ const isEmpty = computed(() => sortedConversations.value.length === 0);
                 class="conv-item__btn conv-item__btn--danger"
                 @click="(e) => confirmDelete(conv, e)"
               >
-                <IconifyIcon icon="ant-design:delete-outlined" />
+                <DeleteOutlined />
               </button>
             </Tooltip>
           </div>

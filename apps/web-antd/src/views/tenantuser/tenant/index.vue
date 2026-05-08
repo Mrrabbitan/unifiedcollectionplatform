@@ -9,7 +9,7 @@ import { Plus } from '@vben/icons';
 import { $t } from '@vben/locales';
 
 import { Button, Card, message, Modal, Popconfirm, Space, Tooltip } from 'ant-design-vue';
-import { IconifyIcon } from '@vben/icons';
+import { DeleteOutlined, EditOutlined } from '@ant-design/icons-vue';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { useVbenForm } from '#/adapter/form';
@@ -262,7 +262,7 @@ function onCreate() {
           <Space size="small" wrap class="action-buttons">
             <Tooltip :title="$t('tenantuser.tenant.edit')">
               <Button size="large" type="link" @click="onEdit(row)">
-                <template #icon><IconifyIcon icon="ant-design:edit-outlined" /></template>
+                <template #icon><EditOutlined /></template>
               </Button>
             </Tooltip>
             <Popconfirm
@@ -273,7 +273,7 @@ function onCreate() {
             >
               <Tooltip :title="$t('tenantuser.tenant.delete')">
                 <Button size="large" type="link" danger>
-                  <template #icon><IconifyIcon icon="ant-design:delete-outlined" /></template>
+                  <template #icon><DeleteOutlined /></template>
                 </Button>
               </Tooltip>
             </Popconfirm>

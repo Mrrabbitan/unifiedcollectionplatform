@@ -9,7 +9,7 @@ import { reactive } from 'vue';
 import { Page, useVbenModal } from '@vben/common-ui';
 
 import { Button, Card, message, Popconfirm, Space, Tooltip } from 'ant-design-vue';
-import { IconifyIcon } from '@vben/icons';
+import { DeleteOutlined, EditOutlined } from '@ant-design/icons-vue';
 
 import { deleteEnvironment, getEnvironmentList } from '#/api/environment-manage';
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
@@ -181,7 +181,7 @@ async function handleDelete(row: EnvironmentItem) {
           <Space size="small" wrap class="action-buttons">
             <Tooltip title="编辑">
               <Button size="large" type="link" @click="handleEdit(row)">
-                <template #icon><IconifyIcon icon="ant-design:edit-outlined" /></template>
+                <template #icon><EditOutlined /></template>
               </Button>
             </Tooltip>
             <Popconfirm
@@ -192,7 +192,7 @@ async function handleDelete(row: EnvironmentItem) {
             >
               <Tooltip title="删除">
                 <Button size="large" type="link" danger>
-                  <template #icon><IconifyIcon icon="ant-design:delete-outlined" /></template>
+                  <template #icon><DeleteOutlined /></template>
                 </Button>
               </Tooltip>
             </Popconfirm>

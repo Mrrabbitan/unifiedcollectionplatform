@@ -12,7 +12,7 @@ import {
   message,
   Spin,
 } from 'ant-design-vue';
-import { IconifyIcon } from '@vben/icons';
+import { ClusterOutlined } from '@ant-design/icons-vue';
 
 import {
   assignProjectWorkerGroups,
@@ -115,7 +115,7 @@ async function handleConfirm() {
         <template #title>
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
-              <IconifyIcon icon="ant-design:cluster-outlined" class="text-lg" />
+              <ClusterOutlined class="text-lg" />
               <span>工作组列表</span>
             </div>
             <Checkbox

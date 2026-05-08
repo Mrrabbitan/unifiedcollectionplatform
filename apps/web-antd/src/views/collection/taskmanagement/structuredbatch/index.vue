@@ -26,6 +26,7 @@ import {
   Spin,
   Tooltip,
 } from 'ant-design-vue';
+import { QuestionCircleOutlined } from '@ant-design/icons-vue';
 
 import { getDataSourceListApi, getDataSourceDetailApi, getMetasApi, type DataSourceInfo, type DataSourceMeta } from '#/api/datasource/datasource';
 import { getFlinkJobConfigAll, type FlinkJobConfigItem } from '#/api/flink-job-config';
@@ -1720,7 +1721,7 @@ async function handleCancel(showMessage = true) {
                         <Switch v-model:checked="useTargetFields" />
                         <span>使用目标端的字段</span>
                         <Tooltip title="开启后，源端字段将使用目标端表的字段，无需手动输入">
-                          <IconifyIcon icon="ant-design:question-circle-outlined" style="color: #999;" />
+                          <QuestionCircleOutlined style="color: #999;" />
                         </Tooltip>
                       </div>
                     </Form.Item>

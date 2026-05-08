@@ -6,7 +6,12 @@ import type { VxeGridPropTypes } from 'vxe-table';
 import { computed, ref, h, watch, nextTick } from 'vue';
 
 import { Page, useVbenModal } from '@vben/common-ui';
-import { IconifyIcon, Plus } from '@vben/icons';
+import { Plus } from '@vben/icons';
+import {
+  DeleteOutlined,
+  EditOutlined,
+  TableOutlined,
+} from '@ant-design/icons-vue';
 import { $t } from '@vben/locales';
 
 import { Button, Card, message, Modal, Tag, Popover, Tabs, TabPane, Table, Spin, Pagination, Popconfirm, Space, Tooltip } from 'ant-design-vue';
@@ -1370,12 +1375,12 @@ function getTypesByCategory(category: string): DataSourceType[] {
           <Space size="small" wrap class="action-buttons">
             <Tooltip :title="$t('datasource.new.edit')">
               <Button size="large" type="link" @click="onEdit(row)">
-                <template #icon><IconifyIcon icon="ant-design:edit-outlined" /></template>
+                <template #icon><EditOutlined /></template>
               </Button>
             </Tooltip>
             <Tooltip :title="$t('datasource.new.meta')">
               <Button size="large" type="link" @click="onShowMeta(row)">
-                <template #icon><IconifyIcon icon="ant-design:table-outlined" /></template>
+                <template #icon><TableOutlined /></template>
               </Button>
             </Tooltip>
             <Popconfirm
@@ -1386,7 +1391,7 @@ function getTypesByCategory(category: string): DataSourceType[] {
             >
               <Tooltip :title="$t('datasource.new.delete')">
                 <Button size="large" type="link" danger>
-                  <template #icon><IconifyIcon icon="ant-design:delete-outlined" /></template>
+                  <template #icon><DeleteOutlined /></template>
                 </Button>
               </Tooltip>
             </Popconfirm>

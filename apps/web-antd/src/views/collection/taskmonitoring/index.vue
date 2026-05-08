@@ -18,7 +18,19 @@ import {
   Tag,
   Tooltip,
 } from 'ant-design-vue';
-import { IconifyIcon } from '@vben/icons';
+import {
+  BarChartOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  CloseCircleOutlined,
+  DeleteOutlined,
+  DownloadOutlined,
+  FileTextOutlined,
+  LoadingOutlined,
+  PauseCircleOutlined,
+  ReloadOutlined,
+  StopOutlined,
+} from '@ant-design/icons-vue';
 import dayjs, { Dayjs } from 'dayjs';
 
 import {
@@ -71,7 +83,7 @@ const statCards = computed(() => [
     key: 'running',
     label: '运行中',
     value: statisticsData.runningCount,
-    icon: 'ant-design:loading-outlined',
+    icon: LoadingOutlined,
     iconBg: 'linear-gradient(153deg, rgb(43, 127, 255), rgb(0, 211, 242))',
     wave: wave1,
   },
@@ -79,7 +91,7 @@ const statCards = computed(() => [
     key: 'success',
     label: '成功',
     value: statisticsData.successCount,
-    icon: 'ant-design:check-circle-outlined',
+    icon: CheckCircleOutlined,
     iconBg: 'linear-gradient(153deg, rgb(0, 188, 125), rgb(0, 213, 190))',
     wave: wave2,
   },
@@ -87,7 +99,7 @@ const statCards = computed(() => [
     key: 'failure',
     label: '失败',
     value: statisticsData.failureCount,
-    icon: 'ant-design:close-circle-outlined',
+    icon: CloseCircleOutlined,
     iconBg: 'linear-gradient(153deg, rgb(251, 44, 54), rgb(255, 99, 126))',
     wave: wave3,
   },
@@ -95,7 +107,7 @@ const statCards = computed(() => [
     key: 'waiting',
     label: '等待中',
     value: statisticsData.waitingCount,
-    icon: 'ant-design:clock-circle-outlined',
+    icon: ClockCircleOutlined,
     iconBg: 'linear-gradient(153deg, rgb(254, 154, 0), rgb(255, 137, 4))',
     wave: wave4,
   },
@@ -103,7 +115,7 @@ const statCards = computed(() => [
     key: 'pause',
     label: '暂停',
     value: statisticsData.pauseCount,
-    icon: 'ant-design:pause-circle-outlined',
+    icon: PauseCircleOutlined,
     iconBg: 'linear-gradient(153deg, rgb(255, 193, 7), rgb(255, 152, 0))',
     wave: wave6,
   },
@@ -111,7 +123,7 @@ const statCards = computed(() => [
     key: 'total',
     label: '总计',
     value: statisticsData.total,
-    icon: 'ant-design:bar-chart-outlined',
+    icon: BarChartOutlined,
     iconBg: 'linear-gradient(153deg, rgb(173, 70, 255), rgb(251, 100, 182))',
     wave: wave5,
   },
@@ -532,8 +544,8 @@ watch(
         >
           <p class="statistics-title">
             <span class="title-icon" :style="{ background: item.iconBg }">
-              <IconifyIcon 
-                :icon="item.icon" 
+              <component
+                :is="item.icon"
                 :class="{ 'animate-spin': item.key === 'running' }"
               />
             </span>
@@ -568,7 +580,7 @@ watch(
                   @click="handleReRun(row)"
                 >
                   <template #icon>
-                    <IconifyIcon icon="ant-design:reload-outlined" />
+                    <ReloadOutlined />
                   </template>
                 </Button>
               </Tooltip>
@@ -580,7 +592,7 @@ watch(
                   @click="handleStop(row)"
                 >
                   <template #icon>
-                    <IconifyIcon icon="ant-design:stop-outlined" />
+                    <StopOutlined />
                   </template>
                 </Button>
               </Tooltip>
@@ -598,7 +610,7 @@ watch(
                     :disabled="!['SUCCESS', 'FAILURE', 'STOP', 'PAUSE'].includes(row.state)"
                   >
                     <template #icon>
-                      <IconifyIcon icon="ant-design:delete-outlined" />
+                      <DeleteOutlined />
                     </template>
                   </Button>
                 </Tooltip>
@@ -606,14 +618,14 @@ watch(
               <Tooltip title="查看日志">
                 <Button size="large" type="link" @click="handleViewLog(row)">
                   <template #icon>
-                    <IconifyIcon icon="ant-design:file-text-outlined" />
+                    <FileTextOutlined />
                   </template>
                 </Button>
               </Tooltip>
               <Tooltip title="下载日志">
                 <Button size="large" type="link" @click="handleDownloadLog(row)">
                   <template #icon>
-                    <IconifyIcon icon="ant-design:download-outlined" />
+                    <DownloadOutlined />
                   </template>
                 </Button>
               </Tooltip>
