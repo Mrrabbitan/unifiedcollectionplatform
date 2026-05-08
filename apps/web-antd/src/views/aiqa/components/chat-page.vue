@@ -18,12 +18,13 @@ import ChatBubble from './chat-bubble.vue';
 defineOptions({ name: 'AiqaChatPage' });
 
 const props = defineProps<{
-  picked: PickedSourceTarget;
+  picked: PickedSourceTarget | null;
 }>();
 
 const emit = defineEmits<{
   (e: 'switch-source'): void;
   (e: 'new-chat'): void;
+  (e: 'request-pick'): void;
 }>();
 
 const projectStore = useProjectStore();
@@ -44,6 +45,12 @@ const scrollEl = ref<HTMLElement | null>(null);
 const docx = useDocxUpload();
 const fileInputRef = ref<HTMLInputElement | null>(null);
 
+/**
+ * 用户在「未选择源/目标」时点击发送 → 先把意图记下来，
+ * 弹出选择框；选定后 watch(props.picked) 会自动续发。
+ */
+const pendingSend = ref(false);
+
 const {
   messages,
   sending,
@@ -53,13 +60,17 @@ const {
   answerQuestion,
 } = useAiChat({ onAction: handleAutoAction });
 
-const sourceLabel = computed(
-  () =>
-    `${props.picked.source.type} · ${props.picked.source.datasource.name}`,
+const hasPicked = computed(() => !!props.picked);
+
+const sourceLabel = computed(() =>
+  props.picked
+    ? `${props.picked.source.type} · ${props.picked.source.datasource.name}`
+    : '',
 );
-const targetLabel = computed(
-  () =>
-    `${props.picked.target.type} · ${props.picked.target.datasource.name}`,
+const targetLabel = computed(() =>
+  props.picked
+    ? `${props.picked.target.type} · ${props.picked.target.datasource.name}`
+    : '',
 );
 
 const isEmpty = computed(() => messages.value.length === 0);
@@ -134,6 +145,11 @@ async function doSend(text?: string) {
   const t = (text ?? inputText.value).trim();
   if (!t && !docx.attachment.value) return;
   if (sending.value) return;
+  if (!props.picked) {
+    pendingSend.value = true;
+    emit('request-pick');
+    return;
+  }
   await send({
     source: props.picked.source,
     target: props.picked.target,
@@ -144,6 +160,21 @@ async function doSend(text?: string) {
   docx.clear();
 }
 
+watch(
+  () => props.picked,
+  async (newPicked) => {
+    if (!newPicked || !pendingSend.value) return;
+    pendingSend.value = false;
+    await doSend();
+  },
+);
+
+function cancelPendingSend() {
+  pendingSend.value = false;
+}
+
+defineExpose({ cancelPendingSend });
+
 function pickSuggestion(s: string) {
   inputText.value = s;
 }
@@ -152,6 +183,11 @@ function onQuestionSubmit(payload: {
   msgId: string;
   answers: Record<string, string>;
 }) {
+  if (!props.picked) {
+    pendingSend.value = true;
+    emit('request-pick');
+    return;
+  }
   void answerQuestion(payload.msgId, payload.answers, {
     source: props.picked.source,
     target: props.picked.target,
@@ -188,11 +224,19 @@ function onKeyDown(e: KeyboardEvent) {
         <div class="aiqa__sub">{{ $t('aiqa.disclaimer') }}</div>
       </div>
       <div class="aiqa__head-right">
-        <Tag color="blue">源 {{ sourceLabel }}</Tag>
-        <Tag color="purple">目标 {{ targetLabel }}</Tag>
-        <Button size="small" @click="onSwitch">{{
-          $t('aiqa.switchSource')
-        }}</Button>
+        <template v-if="hasPicked">
+          <Tag color="blue">源 {{ sourceLabel }}</Tag>
+          <Tag color="purple">目标 {{ targetLabel }}</Tag>
+          <Button size="small" @click="onSwitch">{{
+            $t('aiqa.switchSource')
+          }}</Button>
+        </template>
+        <template v-else>
+          <Tag color="default">未选择数据源</Tag>
+          <Button size="small" type="primary" ghost @click="onSwitch">
+            选择数据源
+          </Button>
+        </template>
         <Button size="small" type="link" @click="onNewChat">新对话</Button>
       </div>
     </header>
