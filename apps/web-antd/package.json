@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@ant-design/charts": "^2.6.7",
+    "@ant-design/icons-vue": "^7.0.1",
     "@antv/x6": "catalog:",
     "@antv/x6-plugin-selection": "catalog:",
     "@vben/access": "workspace:*",
