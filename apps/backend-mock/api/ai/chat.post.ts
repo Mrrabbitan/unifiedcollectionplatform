@@ -27,6 +27,13 @@ function sleep(ms: number) {
   return new Promise<void>((resolve) => setTimeout(resolve, ms));
 }
 
+// 演示节奏：让用户能看清「思考一步 → 输出一句 → 落库一条」的过程
+const THINKING_LINE_DELAY = 700;
+const ANSWER_CHUNK_DELAY = 55;
+const ANSWER_CHUNK_SIZE = 3;
+const ACTION_GAP_DELAY = 450;
+const PHASE_GAP_DELAY = 900;
+
 /** Push a single line-delimited JSON event (custom format, not strict SSE
  * but works through Vite's http-proxy and is trivial to consume in the
  * browser via ReadableStream). */
@@ -37,14 +44,20 @@ async function pushLine(stream: any, payload: any) {
 async function streamThinking(stream: any, lines: string[]) {
   for (const line of lines) {
     await pushLine(stream, { type: 'thinking', text: `${line}\n` });
-    await sleep(220);
+    await sleep(THINKING_LINE_DELAY);
   }
+  // 思考完毕后给一个明显的过渡停顿，让前端把 thinking 折起来
+  await sleep(PHASE_GAP_DELAY);
 }
 
-async function streamAnswer(stream: any, text: string, chunkSize = 6) {
+async function streamAnswer(
+  stream: any,
+  text: string,
+  chunkSize = ANSWER_CHUNK_SIZE,
+) {
   for (let i = 0; i < text.length; i += chunkSize) {
     await pushLine(stream, { type: 'answer', delta: text.slice(i, i + chunkSize) });
-    await sleep(28);
+    await sleep(ANSWER_CHUNK_DELAY);
   }
 }
 
@@ -267,7 +280,7 @@ async function runPineappleResumeStage(
         taskPayload,
       },
     });
-    await sleep(80);
+    await sleep(ACTION_GAP_DELAY);
   }
 
   const summary = `✅ 已自动完成「松果大数据接口文档」的全部在线封装：\n\n- 注册 SFTP 数据源 1 个（地址 ${datasourcePayload.host}:${datasourcePayload.port}）\n- 创建结构化批量采集任务 ${groupsToBuild.length} 条（覆盖 ${groupsToBuild.map((g) => g.name).join('、')}）\n- 全部任务采用「自动建表 + 追加数据」写入 ${body.target.type} · ${body.target.name}\n\n你可以在右侧"执行轨迹"中点击对应链接，跳转到数据源管理 / 采集任务管理查看明细。后续如需开启调度，可在采集任务管理页面右侧操作列里启动。`;

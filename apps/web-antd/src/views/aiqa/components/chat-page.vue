@@ -23,6 +23,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'switch-source'): void;
+  (e: 'new-chat'): void;
 }>();
 
 const projectStore = useProjectStore();
@@ -106,6 +107,8 @@ async function handleAutoAction(msg: ChatMessage, action: ActionItem) {
         ...target.payload,
         link: { label: '查看采集任务', to: '/collection/taskmanagement' },
       };
+      // 触发采集任务管理页面 onActivated 时强制 reload
+      sessionStorage.setItem('taskmanagement_refresh', '1');
     } else {
       target.status = 'success';
     }
@@ -160,10 +163,14 @@ function onSwitch() {
 }
 
 function onNewChat() {
-  reset();
+  // 新建对话由父组件统一管理（创建新的 Conversation 并弹出选择框）
   inputText.value = '';
   docx.clear();
+  emit('new-chat');
 }
+
+// 旧的「清空当前对话」入口仍然保留为隐式能力；目前 UI 不再单独暴露。
+void reset;
 
 function onKeyDown(e: KeyboardEvent) {
   if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
@@ -275,10 +282,9 @@ function onKeyDown(e: KeyboardEvent) {
 .aiqa {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 96px);
+  height: 100%;
   overflow: hidden;
   background: #fff;
-  border-radius: 8px;
 }
 
 .aiqa__header {
@@ -317,14 +323,20 @@ function onKeyDown(e: KeyboardEvent) {
 
 .aiqa__main {
   flex: 1;
-  padding: 24px 18%;
+  padding: 24px 12%;
   overflow-y: auto;
   background: #fff;
 }
 
-@media (width <= 1280px) {
+@media (width <= 1440px) {
   .aiqa__main {
-    padding: 24px 8%;
+    padding: 24px 6%;
+  }
+}
+
+@media (width <= 1100px) {
+  .aiqa__main {
+    padding: 18px 16px;
   }
 }
 
@@ -375,13 +387,19 @@ function onKeyDown(e: KeyboardEvent) {
 }
 
 .aiqa__footer {
-  padding: 12px 18%;
+  padding: 12px 12%;
   border-top: 1px solid #f0f0f0;
 }
 
-@media (width <= 1280px) {
+@media (width <= 1440px) {
   .aiqa__footer {
-    padding: 12px 8%;
+    padding: 12px 6%;
+  }
+}
+
+@media (width <= 1100px) {
+  .aiqa__footer {
+    padding: 12px 16px;
   }
 }
 

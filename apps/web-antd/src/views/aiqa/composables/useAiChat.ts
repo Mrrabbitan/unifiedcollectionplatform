@@ -6,9 +6,12 @@ import type {
   PickedSourceTarget,
 } from '../types';
 
-import { reactive, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
+
+import { storeToRefs } from 'pinia';
 
 import { openChatStream } from '#/api/aiqa';
+import { useAiqaChatStore } from '#/store/aiqa-chat';
 
 interface SendOptions {
   source: PickedSourceTarget['source'];
@@ -29,28 +32,43 @@ function nextId(prefix: string) {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+/**
+ * useAiChat 不再持有自己的 messages / conversationId 状态，
+ * 全部读写当前 active 对话（pinia store + localStorage 持久化）。
+ *
+ * 流式 chunk 仍然需要直接 mutate 单条 message，因此 push 进 store 之前
+ * 用 reactive() 包一下，保证 message 内属性变更能触发 Vue 渲染。
+ */
 export function useAiChat(hooks: UseAiChatHooks = {}) {
-  const messages = ref<ChatMessage[]>([]);
-  const conversationId = ref<string | undefined>(undefined);
+  const store = useAiqaChatStore();
+  const { activeConversation } = storeToRefs(store);
+
   const sending = ref(false);
   let abortCtrl: AbortController | undefined;
 
+  const messages = computed<ChatMessage[]>(
+    () => activeConversation.value?.messages ?? [],
+  );
+  const conversationId = computed<string | undefined>(
+    () => activeConversation.value?.conversationId,
+  );
+
   function pushUserMessage(text: string, attachment?: AttachmentMeta) {
-    // Wrap with reactive() so subsequent mutations through the returned
-    // reference still trigger Vue updates. Pushing a raw object into the
-    // ref array would only re-create the array; later property writes on
-    // the local variable would bypass the Proxy and never re-render.
+    const conv = store.activeConversation;
+    if (!conv) return null;
     const msg = reactive<ChatMessage>({
       id: nextId('u'),
       role: 'user',
       content: text,
       attachment,
     });
-    messages.value.push(msg);
+    store.appendMessage(conv.id, msg);
     return msg;
   }
 
-  function startAssistantMessage(): ChatMessage {
+  function startAssistantMessage(): ChatMessage | null {
+    const conv = store.activeConversation;
+    if (!conv) return null;
     const msg = reactive<ChatMessage>({
       id: nextId('a'),
       role: 'assistant',
@@ -60,13 +78,14 @@ export function useAiChat(hooks: UseAiChatHooks = {}) {
       actions: [],
       loading: true,
     });
-    messages.value.push(msg);
+    store.appendMessage(conv.id, msg);
     return msg;
   }
 
   function findActiveAssistant(): ChatMessage | undefined {
-    for (let i = messages.value.length - 1; i >= 0; i--) {
-      const m = messages.value[i]!;
+    const list = activeConversation.value?.messages ?? [];
+    for (let i = list.length - 1; i >= 0; i--) {
+      const m = list[i]!;
       if (m.role === 'assistant') return m;
     }
     return undefined;
@@ -89,7 +108,8 @@ export function useAiChat(hooks: UseAiChatHooks = {}) {
       if (!event) return;
       switch (event.type) {
         case 'meta': {
-          conversationId.value = event.conversationId;
+          const conv = store.activeConversation;
+          if (conv) store.setConversationId(conv.id, event.conversationId);
           break;
         }
         case 'thinking': {
@@ -167,6 +187,11 @@ export function useAiChat(hooks: UseAiChatHooks = {}) {
 
   async function send(options: SendOptions) {
     if (sending.value) return;
+    // 没有 active 对话先建一个，picked 取自调用方
+    store.ensureActiveConversation({
+      source: { type: options.source.type, datasource: options.source.datasource },
+      target: { type: options.target.type, datasource: options.target.datasource },
+    });
     sending.value = true;
     abortCtrl = new AbortController();
 
@@ -175,6 +200,10 @@ export function useAiChat(hooks: UseAiChatHooks = {}) {
     }
 
     const assistant = startAssistantMessage();
+    if (!assistant) {
+      sending.value = false;
+      return;
+    }
 
     try {
       const resp = await openChatStream(
@@ -219,10 +248,11 @@ export function useAiChat(hooks: UseAiChatHooks = {}) {
     sending.value = false;
   }
 
+  /** 清空当前对话内的消息（保留对话本身） */
   function reset() {
     stop();
-    messages.value = [];
-    conversationId.value = undefined;
+    const conv = store.activeConversation;
+    if (conv) store.clearMessages(conv.id);
   }
 
   function answerQuestion(
@@ -230,7 +260,9 @@ export function useAiChat(hooks: UseAiChatHooks = {}) {
     answers: Record<string, string>,
     options: SendOptions,
   ) {
-    const msg = messages.value.find((m) => m.id === msgId);
+    const conv = store.activeConversation;
+    if (!conv) return;
+    const msg = conv.messages.find((m) => m.id === msgId);
     if (!msg?.question) return;
     const questionId = msg.question.id;
     msg.questionResolved = true;

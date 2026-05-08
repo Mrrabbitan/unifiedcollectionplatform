@@ -205,6 +205,7 @@ const sueperMenus = [
         component: '/aiqa/index',
         meta: {
           icon: 'carbon:chat-bot',
+          keepAlive: true,
           title: 'aiqa.title',
         },
       },
