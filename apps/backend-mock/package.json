@@ -12,6 +12,7 @@
   "dependencies": {
     "@faker-js/faker": "catalog:",
     "jsonwebtoken": "catalog:",
+    "mammoth": "^1.12.0",
     "nitropack": "catalog:"
   },
   "devDependencies": {
