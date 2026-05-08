@@ -18,7 +18,12 @@ import {
   Table,
   Tooltip,
 } from 'ant-design-vue';
-import { IconifyIcon } from '@vben/icons';
+import {
+  DeleteOutlined,
+  EditOutlined,
+  PlusOutlined,
+  ToolOutlined,
+} from '@ant-design/icons-vue';
 
 import {
   createProjectParameter,
@@ -244,7 +249,7 @@ async function handleDelete(record: ProjectParameterItem) {
     <Card size="small" :bordered="false">
       <template #title>
         <div class="flex items-center gap-2">
-          <IconifyIcon icon="ant-design:tool-outlined" class="text-lg" />
+          <ToolOutlined class="text-lg" />
           <span>参数列表</span>
         </div>
       </template>
@@ -258,7 +263,7 @@ async function handleDelete(record: ProjectParameterItem) {
             @search="handleSearch"
           />
           <Button type="primary" @click="openCreateModal">
-            <template #icon><IconifyIcon icon="ant-design:plus-outlined" /></template>
+            <template #icon><PlusOutlined /></template>
             创建参数
           </Button>
         </Space>
@@ -283,7 +288,7 @@ async function handleDelete(record: ProjectParameterItem) {
                   type="link"
                   @click="openEditModal(record)"
                 >
-                  <template #icon><IconifyIcon icon="ant-design:edit-outlined" /></template>
+                  <template #icon><EditOutlined /></template>
                 </Button>
               </Tooltip>
               <Popconfirm
@@ -294,7 +299,7 @@ async function handleDelete(record: ProjectParameterItem) {
               >
                 <Tooltip title="删除">
                   <Button size="small" type="link" danger>
-                    <template #icon><IconifyIcon icon="ant-design:delete-outlined" /></template>
+                    <template #icon><DeleteOutlined /></template>
                   </Button>
                 </Tooltip>
               </Popconfirm>

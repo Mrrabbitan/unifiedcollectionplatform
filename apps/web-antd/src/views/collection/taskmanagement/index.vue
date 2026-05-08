@@ -10,7 +10,17 @@ import { useRouter } from 'vue-router';
 import { Page, useVbenModal } from '@vben/common-ui';
 
 import { Button, Card, message, Popconfirm, Space, Tag, Tooltip } from 'ant-design-vue';
-import { IconifyIcon } from '@vben/icons';
+import {
+  ArrowDownOutlined,
+  ArrowUpOutlined,
+  ClockCircleOutlined,
+  CopyOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  PauseCircleOutlined,
+  PlayCircleOutlined,
+  ScheduleOutlined,
+} from '@ant-design/icons-vue';
 
 import {
   getWorkflowList,
@@ -379,7 +389,7 @@ async function handleDelete(row: WorkflowItem) {
           <Space size="small" wrap class="action-buttons">
             <Tooltip :title="row.releaseState === 'ONLINE' ? '上线状态不可编辑' : '编辑'">
               <Button size="large" type="link" :disabled="row.releaseState === 'ONLINE'" @click="handleEdit(row)">
-                <template #icon><IconifyIcon icon="ant-design:edit-outlined" /></template>
+                <template #icon><EditOutlined /></template>
               </Button>
             </Tooltip>
             <Tooltip :title="row.releaseState === 'ONLINE' ? '下线' : '上线'">
@@ -389,30 +399,32 @@ async function handleDelete(row: WorkflowItem) {
                 @click="handleToggleOnline(row)"
               >
                 <template #icon>
-                  <IconifyIcon :icon="row.releaseState === 'ONLINE' ? 'ant-design:arrow-down-outlined' : 'ant-design:arrow-up-outlined'" />
+                  <ArrowDownOutlined v-if="row.releaseState === 'ONLINE'" />
+                  <ArrowUpOutlined v-else />
                 </template>
               </Button>
             </Tooltip>
             <Tooltip title="启动">
               <Button size="large" type="link" :disabled="row.releaseState !== 'ONLINE'" @click="handleStart(row)">
-                <template #icon><IconifyIcon icon="ant-design:play-circle-outlined" /></template>
+                <template #icon><PlayCircleOutlined /></template>
               </Button>
             </Tooltip>
             <Tooltip title="定时">
               <Button size="large" type="link" @click="handleSchedule(row)">
-                <template #icon><IconifyIcon icon="ant-design:clock-circle-outlined" /></template>
+                <template #icon><ClockCircleOutlined /></template>
               </Button>
             </Tooltip>
             <Tooltip :title="row.scheduleReleaseState === 'ONLINE' ? '定时任务下线' : '定时任务上线'">
               <Button size="large" type="link" :disabled="!row.schedule || row.releaseState !== 'ONLINE'" @click="handleToggleScheduleOnline(row)">
                 <template #icon>
-                  <IconifyIcon :icon="row.scheduleReleaseState === 'ONLINE' ? 'ant-design:pause-circle-outlined' : 'ant-design:schedule-outlined'" />
+                  <PauseCircleOutlined v-if="row.scheduleReleaseState === 'ONLINE'" />
+                  <ScheduleOutlined v-else />
                 </template>
               </Button>
             </Tooltip>
             <Tooltip title="复制任务">
               <Button size="large" type="link" @click="handleCopy(row)">
-                <template #icon><IconifyIcon icon="ant-design:copy-outlined" /></template>
+                <template #icon><CopyOutlined /></template>
               </Button>
             </Tooltip>
             <Popconfirm
@@ -423,7 +435,7 @@ async function handleDelete(row: WorkflowItem) {
             >
               <Tooltip title="删除">
                 <Button size="large" type="link" danger>
-                  <template #icon><IconifyIcon icon="ant-design:delete-outlined" /></template>
+                  <template #icon><DeleteOutlined /></template>
                 </Button>
               </Tooltip>
             </Popconfirm>

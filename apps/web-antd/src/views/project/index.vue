@@ -11,7 +11,14 @@ import { Page, useVbenModal, useVbenDrawer } from '@vben/common-ui';
 import { useUserStore } from '@vben/stores';
 
 import { Button, Card, message, Popconfirm, Space, Tooltip } from 'ant-design-vue';
-import { IconifyIcon } from '@vben/icons';
+import {
+  ClusterOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  EyeOutlined,
+  SettingOutlined,
+  ToolOutlined,
+} from '@ant-design/icons-vue';
 
 import {
   createProject,
@@ -236,27 +243,27 @@ async function handleDelete(row: ProjectItem) {
           <Space size="small" wrap class="action-buttons">
             <Tooltip title="项目概览">
               <Button size="large" type="link" @click="handleOverview(row)">
-                <template #icon><IconifyIcon icon="ant-design:eye-outlined" /></template>
+                <template #icon><EyeOutlined /></template>
               </Button>
             </Tooltip>
             <Tooltip title="编辑">
               <Button size="large" type="link" @click="handleEdit(row)">
-                <template #icon><IconifyIcon icon="ant-design:edit-outlined" /></template>
+                <template #icon><EditOutlined /></template>
               </Button>
             </Tooltip>
             <Tooltip title="分配工作组">
               <Button size="large" type="link" @click="handleAssignWorkerGroup(row)">
-                <template #icon><IconifyIcon icon="ant-design:cluster-outlined" /></template>
+                <template #icon><ClusterOutlined /></template>
               </Button>
             </Tooltip>
             <Tooltip title="项目级别参数">
               <Button size="large" type="link" @click="handleParameter(row)">
-                <template #icon><IconifyIcon icon="ant-design:tool-outlined" /></template>
+                <template #icon><ToolOutlined /></template>
               </Button>
             </Tooltip>
             <Tooltip title="项目偏好设置">
               <Button size="large" type="link" @click="handlePreference(row)">
-                <template #icon><IconifyIcon icon="ant-design:setting-outlined" /></template>
+                <template #icon><SettingOutlined /></template>
               </Button>
             </Tooltip>
             <Popconfirm
@@ -267,7 +274,7 @@ async function handleDelete(row: ProjectItem) {
             >
               <Tooltip title="删除">
                 <Button size="large" type="link" danger>
-                  <template #icon><IconifyIcon icon="ant-design:delete-outlined" /></template>
+                  <template #icon><DeleteOutlined /></template>
                 </Button>
               </Tooltip>
             </Popconfirm>

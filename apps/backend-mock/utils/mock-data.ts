@@ -189,6 +189,29 @@ const sueperMenus = [
     },
   },
   {
+    // 智能问答
+    meta: {
+      icon: 'carbon:chat-bot',
+      order: -2,
+      title: 'aiqa.title',
+    },
+    name: 'Aiqa',
+    path: '/aiqa',
+    redirect: '/aiqa/index',
+    children: [
+      {
+        name: 'AiqaIndex',
+        path: '/aiqa/index',
+        component: '/aiqa/index',
+        meta: {
+          icon: 'carbon:chat-bot',
+          keepAlive: true,
+          title: 'aiqa.title',
+        },
+      },
+    ],
+  },
+  {
     // 租户用户管理
     meta: {
       icon: 'carbon:user',

@@ -5,9 +5,15 @@ import type { VxeTableGridColumns, VxeTableGridOptions } from '#/adapter/vxe-tab
 import { computed, ref } from 'vue';
 
 import { Page, useVbenModal } from '@vben/common-ui';
-import { IconifyIcon, Plus } from '@vben/icons';
+import { Plus } from '@vben/icons';
 import { $t } from '@vben/locales';
 
+import {
+  DeleteOutlined,
+  EditOutlined,
+  LockOutlined,
+  UserOutlined,
+} from '@ant-design/icons-vue';
 import { Button, Card, message, Modal, Popconfirm, Space, Tooltip } from 'ant-design-vue';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
@@ -589,7 +595,7 @@ function onCreate() {
           <Space size="small" wrap class="action-buttons">
             <Tooltip :title="$t('tenantuser.user.edit')">
               <Button size="large" type="link" @click="onEdit(row)">
-                <template #icon><IconifyIcon icon="ant-design:edit-outlined" /></template>
+                <template #icon><EditOutlined /></template>
               </Button>
             </Tooltip>
             <Tooltip :title="row.userType === 'ADMIN_USER' ? $t('tenantuser.user.authorizeDisabled') : $t('tenantuser.user.authorize')">
@@ -599,12 +605,12 @@ function onCreate() {
                 :disabled="row.userType === 'ADMIN_USER'"
                 @click="onAuthorize(row)"
               >
-                <template #icon><IconifyIcon icon="ant-design:user-outlined" /></template>
+                <template #icon><UserOutlined /></template>
               </Button>
             </Tooltip>
             <Tooltip :title="$t('tenantuser.user.resetPassword')">
               <Button size="large" type="link" @click="onResetPassword(row)">
-                <template #icon><IconifyIcon icon="ant-design:lock-outlined" /></template>
+                <template #icon><LockOutlined /></template>
               </Button>
             </Tooltip>
             <Popconfirm
@@ -615,7 +621,7 @@ function onCreate() {
             >
               <Tooltip :title="$t('tenantuser.user.delete')">
                 <Button size="large" type="link" danger>
-                  <template #icon><IconifyIcon icon="ant-design:delete-outlined" /></template>
+                  <template #icon><DeleteOutlined /></template>
                 </Button>
               </Tooltip>
             </Popconfirm>
